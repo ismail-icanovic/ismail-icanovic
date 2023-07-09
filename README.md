@@ -12,8 +12,10 @@
   <samp>
     <a href="https://www.google.com/search?q=Saif+Al+Siam"></a>
     <br>
+    Born - November 1999
+    <br>
     I am workinig as a Cloud / DevOps Engineer at Allops Solutions </br>
-     Interested in Cloud Computing, DevOps, Coding/Scripting, Serverless  
+     I am Interested in AWS Cloud Computing, DevOps, Coding/Scripting, Serverless  
     <br>
     <br>
     <br>
@@ -32,10 +34,11 @@
 <br />
 <h2>🌱 Education / Achievements </h2>
 
-- Bachelor Engineer of Computer Sciences and Informatics
-    - Faculty of Electricalengineering Sarajevo
+- __Bachelor Engineer__ of Computer Sciences and Informatics (2022)
+    - Faculty of Electrical Engineering Sarajevo
         - Department of Computing and Informatics 
-- AWS Certifications
+<br>
+- __AWS Certifications__ (2023)
     1. AWS Solutions Architect Associate  
     2. AWS SysOps Administrator Associate
 
