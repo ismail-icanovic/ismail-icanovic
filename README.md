@@ -37,8 +37,9 @@
 - __Bachelor Engineer__ of Computer Sciences and Informatics (2022)
     - Faculty of Electrical Engineering Sarajevo
         - Department of Computing and Informatics 
-<br>
-- __AWS Certifications__ (2023)
+<br />
+
+- **AWS Certifications** (2023)
     1. AWS Solutions Architect Associate  
     2. AWS SysOps Administrator Associate
 
