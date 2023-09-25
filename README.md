@@ -44,5 +44,7 @@
     2. AWS SysOps Administrator Associate
     3. AWS Developer Associate
 
-<div data-iframe-width="150" data-iframe-height="270" data-share-badge-id="0a018799-ba47-4105-bb68-b3984e987811" data-share-badge-host="https://www.credly.com"></div><script type="text/javascript" async src="//cdn.credly.com/assets/utilities/embed.js"></script>
 
+![aws-certified-solutions-architect-associate-2.png](images%2Faws-certified-solutions-architect-associate-2.png)
+![aws-certified-sysops-administrator-associate-2.png](images%2Faws-certified-sysops-administrator-associate-2.png)
+![aws-certified-developer-associate-2.png](images%2Faws-certified-developer-associate-2.png)
