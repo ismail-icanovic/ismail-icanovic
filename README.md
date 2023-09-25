@@ -42,5 +42,6 @@
 - **AWS Certifications** (2023)
     1. AWS Solutions Architect Associate  
     2. AWS SysOps Administrator Associate
+    3. AWS Developer Associate
 
 
