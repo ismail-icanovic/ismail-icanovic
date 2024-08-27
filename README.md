@@ -43,6 +43,7 @@
     1. AWS Solutions Architect Associate  
     2. AWS SysOps Administrator Associate
     3. AWS Developer Associate
+    4. AWS Data Engineer Associate
 
 
 ![aws-certified-solutions-architect-associate-2.png](images%2Faws-certified-solutions-architect-associate-2.png)
