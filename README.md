@@ -49,4 +49,4 @@
 ![aws-certified-solutions-architect-associate-2.png](images%2Faws-certified-solutions-architect-associate-2.png)
 ![aws-certified-sysops-administrator-associate-2.png](images%2Faws-certified-sysops-administrator-associate-2.png)
 ![aws-certified-developer-associate-2.png](images%2Faws-certified-developer-associate-2.png)
-![aws-certified-data-engineer-associate.png](images%2Faws-certified-data-engineer-associate(1).png)
+![aws-certified-data-engineer-associate.png](images%2Faws-certified-data-engineer-associate (1).png)
