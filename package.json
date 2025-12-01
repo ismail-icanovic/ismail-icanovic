@@ -1,0 +1,16 @@
+{
+  "name": "local-hotspot-chat",
+  "version": "1.0.0",
+  "description": "Simple local chat server for Termux hotspot - no external services needed",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": ["chat", "local", "termux", "hotspot", "websocket"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}
+

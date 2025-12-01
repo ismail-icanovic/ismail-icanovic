@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Local Hotspot Chat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-100 via-cyan-50 to-sky-100 min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col" style="height: 90vh; max-height: 800px;">
+
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-blue-600 to-cyan-600 text-white p-4 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-3 h-3 rounded-full bg-green-400" id="status-dot"></div>
+                <h1 class="text-xl font-bold">Local Chat</h1>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button id="notification-toggle" class="text-2xl opacity-70 hover:opacity-100 transition-opacity" title="Toggle sound notifications">
+                    🔔
+                </button>
+                <div class="text-sm" id="status-text">Connecting...</div>
+            </div>
+        </div>
+
+        <!-- In-app notification banner -->
+        <div id="notification-banner" class="hidden bg-blue-500 text-white px-4 py-3 shadow-lg">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <span class="text-xl">💬</span>
+                    <div>
+                        <p class="font-semibold text-sm" id="banner-title">New message</p>
+                        <p class="text-xs" id="banner-text"></p>
+                    </div>
+                </div>
+                <button id="banner-close" class="text-white opacity-70 hover:opacity-100">✕</button>
+            </div>
+        </div>
+
+        <!-- User Info Bar -->
+        <div class="bg-gray-50 px-4 py-2 border-b border-gray-200">
+            <p class="text-sm text-gray-600">
+                <span class="font-semibold">Your ID:</span>
+                <span id="user-id-display" class="text-blue-600 font-mono">Connecting...</span>
+            </p>
+        </div>
+
+        <!-- Messages Container -->
+        <div id="message-container" class="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
+            <!-- Messages will be inserted here -->
+        </div>
+
+        <!-- Input Area -->
+        <div class="p-4 bg-white border-t border-gray-200">
+            <div class="flex space-x-2">
+                <input
+                    type="text"
+                    id="message-input"
+                    placeholder="Type your message..."
+                    disabled
+                    class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                />
+                <button
+                    id="send-button"
+                    disabled
+                    class="px-6 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg font-semibold hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-300 disabled:cursor-not-allowed transition-all"
+                >
+                    Send
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        // Generate a unique user ID (stored in localStorage)
+        let userId = localStorage.getItem('chatUserId');
+        if (!userId) {
+            userId = 'user_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('chatUserId', userId);
+        }
+
+        const statusDot = document.getElementById('status-dot');
+        const statusText = document.getElementById('status-text');
+        const userIdDisplay = document.getElementById('user-id-display');
+        const messageContainer = document.getElementById('message-container');
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
+
+        // Notification settings
+        let soundEnabled = localStorage.getItem('soundEnabled') !== 'false'; // Default: enabled
+        let isPageVisible = true;
+        let bannerTimeout = null;
+
+        // Display shortened user ID
+        userIdDisplay.textContent = userId.substring(0, 12) + '...';
+
+        // User color mapping - red/warm tones for other users
+        const userColors = {};
+        const availableColors = [
+            { bg: 'bg-red-100', border: 'border-red-300', text: 'text-red-800' },
+            { bg: 'bg-rose-100', border: 'border-rose-300', text: 'text-rose-800' },
+            { bg: 'bg-orange-100', border: 'border-orange-300', text: 'text-orange-800' },
+            { bg: 'bg-amber-100', border: 'border-amber-300', text: 'text-amber-800' },
+            { bg: 'bg-pink-100', border: 'border-pink-300', text: 'text-pink-800' },
+            { bg: 'bg-fuchsia-100', border: 'border-fuchsia-300', text: 'text-fuchsia-800' },
+        ];
+
+        function getUserColor(uid) {
+            if (!userColors[uid]) {
+                let hash = 0;
+                for (let i = 0; i < uid.length; i++) {
+                    hash = uid.charCodeAt(i) + ((hash << 5) - hash);
+                }
+                const colorIndex = Math.abs(hash) % availableColors.length;
+                userColors[uid] = availableColors[colorIndex];
+            }
+            return userColors[uid];
+        }
+
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function renderMessage(msg) {
+            const isCurrentUser = msg.userId === userId;
+            const color = getUserColor(msg.userId);
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`;
+
+            const truncatedUserId = msg.userId.substring(0, 8);
+
+            messageDiv.innerHTML = `
+                <div class="max-w-xs lg:max-w-md">
+                    ${!isCurrentUser ? `<p class="text-xs ${color.text} font-semibold mb-1 px-1">${truncatedUserId}</p>` : ''}
+                    <div class="${isCurrentUser ? 'bg-gradient-to-br from-blue-500 to-blue-600 text-white' : `${color.bg} ${color.text} border ${color.border}`} rounded-2xl px-4 py-2 shadow-sm">
+                        <p class="break-words">${escapeHtml(msg.text)}</p>
+                        <p class="text-xs ${isCurrentUser ? 'text-blue-100' : 'text-gray-500'} mt-1">${formatTime(msg.timestamp)}</p>
+                    </div>
+                </div>
+            `;
+
+            messageContainer.appendChild(messageDiv);
+            messageContainer.scrollTop = messageContainer.scrollHeight;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Update notification button appearance
+        function updateNotificationButton() {
+            const btn = document.getElementById('notification-toggle');
+            if (!btn) return;
+
+            if (soundEnabled) {
+                btn.textContent = '🔔';
+                btn.title = 'Sound alerts enabled (click to disable)';
+                btn.style.opacity = '1';
+            } else {
+                btn.textContent = '🔕';
+                btn.title = 'Sound alerts disabled (click to enable)';
+                btn.style.opacity = '0.6';
+            }
+        }
+
+        // Toggle sound notifications
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            localStorage.setItem('soundEnabled', soundEnabled);
+            updateNotificationButton();
+
+            if (soundEnabled) {
+                playNotificationSound(); // Test sound
+                showInAppBanner('Sound alerts enabled', 'You\'ll hear a sound when new messages arrive');
+            }
+        }
+
+        // Show in-app notification banner
+        function showInAppBanner(title, text) {
+            const banner = document.getElementById('notification-banner');
+            const bannerTitle = document.getElementById('banner-title');
+            const bannerText = document.getElementById('banner-text');
+
+            bannerTitle.textContent = title;
+            bannerText.textContent = text;
+            banner.classList.remove('hidden');
+
+            // Auto-hide after 4 seconds
+            if (bannerTimeout) clearTimeout(bannerTimeout);
+            bannerTimeout = setTimeout(() => {
+                banner.classList.add('hidden');
+            }, 4000);
+        }
+
+        // Show notification for new message
+        function showNotification(message) {
+            // Don't notify for own messages
+            if (message.userId === userId) {
+                return;
+            }
+
+            const truncatedUserId = message.userId.substring(0, 8);
+
+            // Always show in-app banner when not focused
+            if (!isPageVisible) {
+                showInAppBanner(`${truncatedUserId}`, message.text.substring(0, 60));
+            }
+
+            // Play sound if enabled
+            if (soundEnabled) {
+                playNotificationSound();
+
+                // Vibrate on mobile if available
+                if ('vibrate' in navigator) {
+                    navigator.vibrate([200, 100, 200]);
+                }
+            }
+        }
+
+        // Play a simple notification sound
+        function playNotificationSound() {
+            // Create a pleasant notification sound using Web Audio API
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+                // Create a more pleasant two-tone notification
+                const createTone = (frequency, startTime, duration) => {
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+
+                    oscillator.frequency.value = frequency;
+                    oscillator.type = 'sine';
+
+                    gainNode.gain.setValueAtTime(0, startTime);
+                    gainNode.gain.linearRampToValueAtTime(0.15, startTime + 0.01);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+
+                    oscillator.start(startTime);
+                    oscillator.stop(startTime + duration);
+                };
+
+                const now = audioContext.currentTime;
+                createTone(800, now, 0.1);        // First tone
+                createTone(1000, now + 0.12, 0.15); // Second tone (higher)
+
+            } catch (e) {
+                console.log('Could not play sound:', e);
+            }
+        }
+
+        // Track page visibility
+        document.addEventListener('visibilitychange', () => {
+            isPageVisible = !document.hidden;
+
+            // Hide banner when page becomes visible
+            if (isPageVisible) {
+                const banner = document.getElementById('notification-banner');
+                banner.classList.add('hidden');
+            }
+        });
+
+        // Close banner button
+        document.getElementById('banner-close').addEventListener('click', () => {
+            document.getElementById('notification-banner').classList.add('hidden');
+            if (bannerTimeout) clearTimeout(bannerTimeout);
+        });
+
+        // Check if page is currently visible
+        isPageVisible = !document.hidden;
+
+        function setConnectionStatus(connected) {
+            if (connected) {
+                statusDot.className = 'w-3 h-3 rounded-full bg-green-400';
+                statusText.textContent = 'Connected';
+                messageInput.disabled = false;
+                sendButton.disabled = false;
+            } else {
+                statusDot.className = 'w-3 h-3 rounded-full bg-red-400 pulse';
+                statusText.textContent = 'Connecting...';
+                messageInput.disabled = true;
+                sendButton.disabled = true;
+            }
+        }
+
+        // WebSocket connection
+        let ws;
+        let reconnectTimeout;
+
+        function connect() {
+            // Get WebSocket URL (same host as the page)
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${protocol}//${window.location.host}`;
+
+            console.log('Connecting to:', wsUrl);
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                console.log('Connected to server');
+                setConnectionStatus(true);
+                if (reconnectTimeout) {
+                    clearTimeout(reconnectTimeout);
+                }
+
+                // Update notification button state
+                updateNotificationButton();
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+
+                    if (data.type === 'history') {
+                        // Load message history
+                        messageContainer.innerHTML = '';
+                        data.messages.forEach(msg => renderMessage(msg));
+                    } else if (data.type === 'message') {
+                        // New message
+                        renderMessage(data.message);
+                        showNotification(data.message);
+                    }
+                } catch (error) {
+                    console.error('Error processing message:', error);
+                }
+            };
+
+            ws.onclose = () => {
+                console.log('Disconnected from server');
+                setConnectionStatus(false);
+                // Attempt to reconnect after 3 seconds
+                reconnectTimeout = setTimeout(connect, 3000);
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+        }
+
+        function sendMessage() {
+            const text = messageInput.value.trim();
+            if (!text || !ws || ws.readyState !== WebSocket.OPEN) {
+                return;
+            }
+
+            ws.send(JSON.stringify({
+                type: 'chat',
+                userId: userId,
+                text: text
+            }));
+
+            messageInput.value = '';
+        }
+
+        // Event listeners
+        sendButton.addEventListener('click', sendMessage);
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Notification toggle button
+        document.getElementById('notification-toggle').addEventListener('click', toggleSound);
+
+        // Initialize notification button
+        updateNotificationButton();
+
+        // Start connection
+        connect();
+    </script>
+</body>
+</html>
+
